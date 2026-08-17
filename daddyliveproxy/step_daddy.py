@@ -29,18 +29,19 @@ class Channel(rx.Base):
 class StepDaddy:
     """Wrapper around the DLHD upstream service."""
 
-        def __init__(self) -> None:
+    def __init__(self) -> None:
         raw_proxy = (config.socks5 or "").strip()
         if raw_proxy:
-            # Protokol yoksa http:// ekle, varsa olduğu gibi kullan
-            if not (raw_proxy.startswith("http://") or raw_proxy.startswith("socks5://") or raw_proxy.startswith("socks5h://")):
-                proxy_url = f"http://{raw_proxy}"
-            else:
-                proxy_url = raw_proxy
+            clean_proxy = (
+                raw_proxy.replace("http://", "")
+                .replace("https://", "")
+                .replace("socks5://", "")
+            )
+            proxy_url = f"http://{clean_proxy}"
             self._session = AsyncSession(proxy=proxy_url)
         else:
             self._session = AsyncSession()
-            
+
         self.channels: List[Channel] = []
         meta_path = Path(__file__).with_name("meta.json")
         try:
@@ -49,7 +50,6 @@ class StepDaddy:
         except (OSError, json.JSONDecodeError) as exc:
             logger.warning("Failed to load channel metadata: %s", exc)
             self._meta = {}
-
 
     @staticmethod
     def _load_settings() -> Dict[str, str]:
@@ -106,7 +106,6 @@ class StepDaddy:
             )
             response.raise_for_status()
 
-            # Updated regex for the new HTML structure
             channels_data = re.compile(
                 r'<a class="card"[^>]*href="/watch\.php\?id=(\d+)"[^>]*>.*?<div class="card__title">(.*?)</div>',
                 re.DOTALL,
@@ -119,7 +118,7 @@ class StepDaddy:
             processed_ids: set[str] = set()
             for ch_data in channels_data:
                 try:
-                    channel = self._get_channel(ch_data)  # accepts (id, name) tuples
+                    channel = self._get_channel(ch_data)
                 except ValueError as exc:
                     logger.debug(
                         "Skipping malformed channel entry %s: %s", ch_data, exc
@@ -149,9 +148,7 @@ class StepDaddy:
                     ).findall(blocks[0])
                     for channel_data in listings:
                         try:
-                            channel = self._get_channel(
-                                channel_data
-                            )  # accepts old 3-tuple
+                            channel = self._get_channel(channel_data)
                         except ValueError as exc:
                             logger.debug(
                                 "Skipping malformed channel entry %s: %s",
@@ -165,7 +162,7 @@ class StepDaddy:
                         "Upstream channel listing did not contain any channels"
                     )
 
-        # --- 3) Merge in channels found via schedule (keeps your original behavior) ---
+        # --- 3) Merge in channels found via schedule ---
         try:
             schedule = await self.schedule()
         except Exception:
