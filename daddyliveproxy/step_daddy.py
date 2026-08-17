@@ -44,7 +44,7 @@ class StepDaddy:
             logger.warning("Failed to load channel metadata: %s", exc)
             self._meta = {}
 
-        @staticmethod
+    @staticmethod
     def _load_settings() -> Dict[str, str]:
         """Load fixed upstream settings."""
         return {
@@ -194,13 +194,10 @@ class StepDaddy:
         - NEW card HTML match: (channel_id, channel_name)
         - OLD nav HTML match: (slug_href, target_attr, channel_name)
         """
-        # Detect shape: new (2 items) vs old (>=3 items)
         if isinstance(channel_data, (list, tuple)) and len(channel_data) == 2:
-            # New card-based HTML: direct id + name
             channel_id = str(channel_data[0]).strip()
             channel_name = str(channel_data[1]).replace("&amp;", "&").strip()
         elif isinstance(channel_data, (list, tuple)) and len(channel_data) >= 3:
-            # Old structure: need to parse id from href slug
             slug = str(channel_data[0])
             parts = slug.split("-")
             if len(parts) < 2:
@@ -212,7 +209,6 @@ class StepDaddy:
         else:
             raise ValueError(f"Channel tuple missing/invalid data: {channel_data!r}")
 
-        # Normalizations from your original logic
         if channel_id == "666":
             channel_name = "Nick Music"
         if channel_id == "609":
@@ -256,7 +252,6 @@ class StepDaddy:
         key_marker = "CHANNEL_KEY"
         max_retries = 3
 
-        # Try the chosen prefix first, then common fallbacks (deduped)
         fallbacks = ["stream", "cast", "watch", "player", "casting"]
         prefixes = [p for p in [selected_prefix] + fallbacks if p]
         seen = set()
@@ -377,7 +372,6 @@ class StepDaddy:
 
         playlist_lines: list[str] = []
         for line in (m3u8.text or "").splitlines():
-            # Rewrite KEY
             if line.startswith("#EXT-X-KEY:"):
                 match = re.search(r'URI="(.*?)"', line)
                 if match:
@@ -389,7 +383,6 @@ class StepDaddy:
                     )
                     line = line.replace(original_url, replacement)
 
-            # Rewrite MAP (init segment) -> give it a known extension
             elif line.startswith("#EXT-X-MAP:"):
                 match = re.search(r'URI="(.*?)"', line)
                 if match and config.proxy_content:
@@ -399,10 +392,7 @@ class StepDaddy:
                     )
                     line = line.replace(original_url, replacement)
 
-            # Rewrite media segment URLs
             elif line and not line.startswith("#") and config.proxy_content:
-                # HLS segments are plain lines (non-#), typically .ts or .m4s.
-                # Our proxy URL had no extension; append .ts so ffmpeg accepts it.
                 line = f"{config.api_url}/content/{encrypt(line)}.ts"
 
             playlist_lines.append(line)
@@ -433,7 +423,6 @@ class StepDaddy:
     def content_url(path: str) -> str:
         """Return the decrypted upstream URL. Strip the fake extension we appended."""
         try:
-            # Remove final extension we added (.ts / .m4s / .mp4), if present
             core = path.rsplit(".", 1)[0]
             return decrypt(core)
         except Exception as exc:
