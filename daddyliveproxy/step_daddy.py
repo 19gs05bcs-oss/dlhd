@@ -29,14 +29,18 @@ class Channel(rx.Base):
 class StepDaddy:
     """Wrapper around the DLHD upstream service."""
 
-    def __init__(self) -> None:
-                proxy = config.socks5
-        if proxy:
-            if "://" not in proxy:
-                proxy = f"http://{proxy}"
-            self._session = AsyncSession(proxy=proxy)
+        def __init__(self) -> None:
+        raw_proxy = (config.socks5 or "").strip()
+        if raw_proxy:
+            # Protokol yoksa http:// ekle, varsa olduğu gibi kullan
+            if not (raw_proxy.startswith("http://") or raw_proxy.startswith("socks5://") or raw_proxy.startswith("socks5h://")):
+                proxy_url = f"http://{raw_proxy}"
+            else:
+                proxy_url = raw_proxy
+            self._session = AsyncSession(proxy=proxy_url)
         else:
             self._session = AsyncSession()
+            
         self.channels: List[Channel] = []
         meta_path = Path(__file__).with_name("meta.json")
         try:
@@ -45,6 +49,7 @@ class StepDaddy:
         except (OSError, json.JSONDecodeError) as exc:
             logger.warning("Failed to load channel metadata: %s", exc)
             self._meta = {}
+
 
     @staticmethod
     def _load_settings() -> Dict[str, str]:
