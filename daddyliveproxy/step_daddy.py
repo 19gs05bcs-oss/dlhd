@@ -30,9 +30,11 @@ class StepDaddy:
     """Wrapper around the DLHD upstream service."""
 
     def __init__(self) -> None:
-        socks5 = config.socks5
-        if socks5:
-            self._session = AsyncSession(proxy=f"socks5://{socks5}")
+                proxy = config.socks5
+        if proxy:
+            if "://" not in proxy:
+                proxy = f"http://{proxy}"
+            self._session = AsyncSession(proxy=proxy)
         else:
             self._session = AsyncSession()
         self.channels: List[Channel] = []
