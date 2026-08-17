@@ -44,22 +44,13 @@ class StepDaddy:
             logger.warning("Failed to load channel metadata: %s", exc)
             self._meta = {}
 
-    @staticmethod
+        @staticmethod
     def _load_settings() -> Dict[str, str]:
-        """Load settings from settings.json."""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        settings_path = os.path.join(current_dir, "settings.json")
-
-        try:
-            with open(settings_path, "r", encoding="utf-8") as f:
-                settings = json.load(f)
-
-                return {
-                    "base_url": settings.get("base_url"),
-                    "prefix": settings.get("prefix"),
-                }
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            raise ValueError("Falha ao encontrar ou ler o arquivo settings.json")
+        """Load fixed upstream settings."""
+        return {
+            "base_url": "https://dlhd.pk",
+            "prefix": "stream",
+        }
 
     async def aclose(self) -> None:
         """Close the underlying HTTP session."""
