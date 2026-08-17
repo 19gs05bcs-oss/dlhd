@@ -48,7 +48,7 @@ class StepDaddy:
     def _load_settings() -> Dict[str, str]:
         """Load fixed upstream settings."""
         return {
-            "base_url": "https://dlhd.pk",
+            "base_url": "https://dlstreams.st",
             "prefix": "stream",
         }
 
